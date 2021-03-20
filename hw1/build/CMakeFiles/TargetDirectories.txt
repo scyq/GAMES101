@@ -1,0 +1,3 @@
+/home/yuqingchen/GAMES101/hw1/build/CMakeFiles/rebuild_cache.dir
+/home/yuqingchen/GAMES101/hw1/build/CMakeFiles/edit_cache.dir
+/home/yuqingchen/GAMES101/hw1/build/CMakeFiles/Rasterizer.dir
