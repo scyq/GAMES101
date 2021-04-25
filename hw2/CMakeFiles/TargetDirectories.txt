@@ -1,0 +1,3 @@
+/home/cs18/GAMES101/hw2/CMakeFiles/rebuild_cache.dir
+/home/cs18/GAMES101/hw2/CMakeFiles/Rasterizer.dir
+/home/cs18/GAMES101/hw2/CMakeFiles/edit_cache.dir
