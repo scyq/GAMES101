@@ -137,10 +137,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     int y_max = (int)*std::max_element(y_list, y_list+3);
 
     std::vector<Eigen::Vector2f> MSAA = {
-        {-0.25, 0.25},
         {0.25, 0.25},
-        {0.25, -0.25},
-        {-0.25, -0.25}
+        {0.25, 0.75},
+        {0.75, 0.25},
+        {0.75, 0.75}
     };
 
     for (int i = x_min; i <= x_max; i++) {
