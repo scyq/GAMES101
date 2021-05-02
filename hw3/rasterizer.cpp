@@ -281,7 +281,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
         for (int j = y_min; j <= y_max; j++)
         {
             int _4x_msaa_cnt = 0;
-            float inter_z;
+            float inter_z = FLT_MAX;
             Eigen::Vector3f inter_color;
             Eigen::Vector3f inter_normal;
             Eigen::Vector2f inter_tex;
@@ -301,37 +301,31 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
                     float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                     float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                     z_interpolated *= w_reciprocal;
-                    inter_z = std::min(z_interpolated, depth_buf[get_index(i, j)]);
-
-                    // color interpolation
-                    inter_color = {
-                        alpha * t.color[0].x() + beta * t.color[1].x() + gamma * t.color[2].x(),
-                        alpha * t.color[0].y() + beta * t.color[1].y() + gamma * t.color[2].y(),
-                        alpha * t.color[0].z() + beta * t.color[1].z() + gamma * t.color[2].z()};
-
-                    // normal interpolation
-                    inter_normal = {
-                        alpha * t.normal[0].x() + beta * t.normal[1].x() + gamma * t.normal[2].x(),
-                        alpha * t.normal[0].y() + beta * t.normal[1].y() + gamma * t.normal[2].y(),
-                        alpha * t.normal[0].z() + beta * t.normal[1].z() + gamma * t.normal[2].z()};
-
-                    // texture coordinates interpolation
-                    inter_tex = {
-                        alpha * t.tex_coords[0].x() + beta * t.tex_coords[1].x() + gamma * t.tex_coords[2].x(),
-                        alpha * t.tex_coords[0].y() + beta * t.tex_coords[1].y() + gamma * t.tex_coords[2].y()};
-
-                    inter_shading_color = {
-                        alpha * view_pos[0].x() + beta * view_pos[1].x() + gamma * view_pos[2].x(),
-                        alpha * view_pos[0].y() + beta * view_pos[1].y() + gamma * view_pos[2].y(),
-                        alpha * view_pos[0].z() + beta * view_pos[1].z() + gamma * view_pos[2].z()};
-
+                    inter_z = std::min(z_interpolated, inter_z);
                     _4x_msaa_cnt++;
                 }
             }
-            if (_4x_msaa_cnt > 0)
+            if (_4x_msaa_cnt > 0 && inter_z < depth_buf[get_index(i, j)])
             {
                 depth_buf[get_index(i, j)] = inter_z;
-                fragment_shader_payload payload(inter_color * (_4x_msaa_cnt / 4.0), inter_normal.normalized(), inter_tex, t.tex);
+                auto bary_coordinates = computeBarycentric2D(i, j, t.v);
+                float alpha = std::get<0>(bary_coordinates);
+                float beta = std::get<1>(bary_coordinates);
+                float gamma = std::get<2>(bary_coordinates);
+
+                // color interpolation
+                inter_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
+
+                // normal interpolation
+                inter_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1).normalized();
+
+                // texture coordinates interpolation
+                inter_tex = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
+
+                // shading color interpolation
+                inter_shading_color = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
+
+                fragment_shader_payload payload(inter_color * (_4x_msaa_cnt / 4.0), inter_normal, inter_tex, t.tex);
                 payload.view_pos = inter_shading_color;
                 auto pixel_color = fragment_shader(payload);
                 set_pixel({i, j}, pixel_color);
