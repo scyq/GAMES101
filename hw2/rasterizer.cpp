@@ -146,11 +146,14 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     for (int i = x_min; i <= x_max; i++) {
         for (int j = y_min; j <= y_max; j++) {
             int _4x_msaa_cnt = 0;
-            float min_depth = INFINITY;
+            float min_depth = FLT_MAX;
             // MSAA
             for (int k = 0; k < 4; k++) {
-                if (insideTriangle(i+MSAA[k][0], j+MSAA[k][1], t.v)) {
-                    auto[alpha, beta, gamma] = computeBarycentric2D(i+MSAA[k][0], j+MSAA[k][1], t.v);
+                if (insideTriangle(i + MSAA[k][0], j + MSAA[k][1], t.v)) {
+                    auto bary_tup = computeBarycentric2D(i + MSAA[k][0], j + MSAA[k][1], t.v);
+                    float alpha = std::get<0>(bary_tup);
+                    float beta = std::get<1>(bary_tup);
+                    float gamma = std::get<2>(bary_tup);
                     float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                     float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                     z_interpolated *= w_reciprocal;
@@ -161,17 +164,11 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
             if (_4x_msaa_cnt > 0) {
                 if (min_depth < depth_buf[get_index(i, j)]) {
                     depth_buf[get_index(i, j)] = min_depth;
-                    set_pixel({i, j, min_depth}, t.getColor() * (_4x_msaa_cnt / 4.0));
+                    set_pixel({(float)i, (float)j, min_depth}, t.getColor() * (_4x_msaa_cnt / 4.0));
                 }
             }
         }
     }
-
-
-    // If so, use the following code to get the interpolated z value.
-
-
-    // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
