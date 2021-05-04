@@ -302,7 +302,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
                     // shading color interpolation
                     Eigen::Vector3f inter_shading_color = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
 
-                    fragment_shader_payload payload(inter_color, inter_normal, inter_tex, t.tex);
+                    fragment_shader_payload payload(inter_color, inter_normal, inter_tex, texture ? &*texture : nullptr);
                     payload.view_pos = inter_shading_color;
                     auto pixel_color = fragment_shader(payload);
                     set_pixel({i, j}, pixel_color);
