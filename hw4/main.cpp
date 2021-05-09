@@ -61,6 +61,23 @@ void bezier(const std::vector<cv::Point2f> &control_points, cv::Mat &window)
     {
         auto point = recursive_bezier(control_points, t);
         window.at<cv::Vec3b>(point.y, point.x)[1] = 255;
+        // anti-aliasing
+        std::vector<cv::Point2f> neighbors;
+        float floor_x = floor(point.x);
+        float ceil_x = ceil(point.x);
+        float floor_y = floor(point.y);
+        float ceil_y = ceil(point.y);
+
+        neighbors.emplace_back(floor_x, point.y);
+        neighbors.emplace_back(point.x, floor_y);
+        neighbors.emplace_back(ceil_x, point.y);
+        neighbors.emplace_back(point.x, ceil_y);
+
+        for (auto neighbor : neighbors)
+        {
+            float distance = sqrt(pow(point.x - neighbor.x, 2) + pow(point.y - neighbor.y, 2));
+            window.at<cv::Vec3b>(neighbor.y, neighbor.x)[1] = std::max(255 * (1 - distance), (float)window.at<cv::Vec3b>(neighbor.y, neighbor.x)[1]);
+        }
     }
 }
 
